@@ -19,6 +19,16 @@ if [[ -d /home/vagrant/.config && -f /home/vagrant/.config/starship.toml ]]; the
 else
   mkdir -p /home/vagrant/.config && cp /vagrant/starship.toml /home/vagrant/.config/starship.toml
 fi
+if [[ -f /usr/bin/yq ]]; then
+  echo "already exists"
+else
+  wget https://github.com/mikefarah/yq/releases/download/v4.2.0/yq_linux_amd64 -O /usr/bin/yq
+fi
+if [[ -x /usr/bin/yq ]]; then
+  echo "file is /usr/bin/yq permissions are set correctly"
+else
+  chmod +x /usr/bin/yq
+fi
 apt-get update
 apt-get -y upgrade
 SCRIPT
