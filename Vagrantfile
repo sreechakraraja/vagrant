@@ -19,37 +19,48 @@ if [[ -d /home/vagrant/.config && -f /home/vagrant/.config/starship.toml ]]; the
 else
   mkdir -p /home/vagrant/.config && cp /vagrant/starship.toml /home/vagrant/.config/starship.toml
 fi
-if [[ -f /usr/bin/yq ]]; then
-  echo "already exists"
-else
-  wget https://github.com/mikefarah/yq/releases/download/v4.2.0/yq_linux_amd64 -O /usr/bin/yq
-fi
-if [[ -x /usr/bin/yq ]]; then
-  echo "file is /usr/bin/yq permissions are set correctly"
-else
-  chmod +x /usr/bin/yq
-fi
 apt-get update
+if [ -x /usr/bin/tmux ]; then
+  echo "tmux is already installed"
+else
+  echo "Installing tmux"
+  apt-get install tmux
+  if [-x /usr/bin/tmux ]; then
+    echo "tmux is installed"
+  else
+    echo "failed to install tmux"
+  fi
+fi
 apt-get -y upgrade
 SCRIPT
 Vagrant.configure(2) do |config| 
+  # config.vm.box = "boxomatic/debian-11" # Debian 11 box 
   config.vm.box = "bento/ubuntu-20.04" 
-
-  vms = [ 
+  # config.vm.provider :virtualbox do |v| 
+  #   v.customize ["modifyvm", :id, "--uart1", "0x3F8", "4"] 
+  #   v.customize ["modifyvm", :id, "--uartmode1", "file", File::NULL] 
+  # end
+  boxes = [ 
     { :name => "master",  :ip => MASTER_IP,  :cpus => 2, :memory => 2048 }, 
     { :name => "node-01", :ip => NODE_01_IP, :cpus => 1, :memory => 2048 }, 
-  ]
-  
-  vms.each do |option| 
-    config.vm.define option[:name] do |box| 
-      box.vm.hostname = option[:name] 
-      box.vm.network :private_network, ip: option[:ip] 
+  ] 
+  boxes.each do |opts| 
+    config.vm.define opts[:name] do |box| 
+      box.vm.hostname = opts[:name] 
+      box.vm.network :private_network, ip: opts[:ip] 
       box.vm.provider "virtualbox" do |vb| 
-        vb.cpus = option[:cpus] 
-        vb.memory = option[:memory] 
-      end
+        vb.cpus = opts[:cpus] 
+        vb.memory = opts[:memory] 
+      end 
+      # box.vm.provision "shell", path:"./install-kubernetes-dependencies.sh" 
+      # if box.vm.hostname == "master" then  
+      #   box.vm.provision "shell", path:"./configure-master-node.sh" 
+      #   end 
+      # if box.vm.hostname == "node-01" then ##TODO: create some regex to match worker hostnames 
+      #   box.vm.provision "shell", path:"./configure-worker-nodes.sh" 
+      # end
     end
-  end
+  end 
 end
 
 Vagrant.configure(2) do |config| 
